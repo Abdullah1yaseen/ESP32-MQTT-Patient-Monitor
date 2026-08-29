@@ -1,3 +1,36 @@
+/*
+ * ============================================================
+ * Project      : ESP32 Patient Monitor
+ * Author       : Abdullah Abu Halawa
+ * Date         : 4-08-2026
+ * Version      : 1.0
+ * Device       : ESP32 Receiver / WiFi Access Point + MQTT Broker
+ * ============================================================
+ *
+ * Description:
+ * ESP32-based patient monitoring receiver that hosts a local
+ * WiFi network and MQTT broker, receives real-time patient
+ * health data over MQTT, and displays it on a TFT screen.
+ *
+ * The receiver subscribes to the patientData MQTT topic
+ * and displays heart rate, SpO2, and temperature readings.
+ *
+ * Features:
+ * - WiFi Access Point
+ * - MQTT Broker
+ * - Real-time patient data reception
+ * - TFT display
+ * - Heart rate display
+ * - SpO2 display
+ * - Temperature display
+ * - Patient health alerts
+ * - 30-second standby mode
+ * - Animated blue ECG waveform
+ *
+ * ============================================================
+ */
+
+
 #include <WiFi.h>
 #include <PicoMQTT.h>
 #include <ArduinoJson.h>
@@ -219,7 +252,6 @@ void setup(void) {
   drawUIBase();
   lastDataTime = millis();
 
-  // إعداد نقطة الوصول المحلية (Access Point)
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ap_ssid, ap_pass);
 
@@ -227,7 +259,6 @@ void setup(void) {
   Serial.print("AP IP Address: ");
   Serial.println(WiFi.softAPIP());
 
-  // إعداد استقبال البروكر المحلي
   broker.subscribe(topic_telemetry, [](const char* topic, const char* payload) {
     Serial.print("[Local MQTT Received] ");
     Serial.println(payload);
@@ -241,7 +272,7 @@ void setup(void) {
 // LOOP
 // ============================================================
 void loop(void) {
-  broker.loop(); // معالجة رسائل MQTT المحلية
+  broker.loop(); 
 
   if (!standbyMode && lastDataTime > 0 && millis() - lastDataTime >= STANDBY_TIMEOUT) {
     standbyMode = true;

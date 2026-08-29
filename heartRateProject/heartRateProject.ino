@@ -1,3 +1,29 @@
+/*
+ * ============================================================
+ * Project      : ESP32 Patient Monitor
+ * Author       : Abdullah Abu Halawa
+ * Date         : 3-08-2026
+ * Version      : 1.0
+ * Device       : ESP32 Sender / MQTT Client (Publisher)
+ * ============================================================
+ *
+ * Description:
+ * ESP32-based patient monitoring system that collects
+ * patient health data and transmits it in real time
+ * using MQTT over a local WiFi network.
+ *
+ * The ESP32 connects to the receiver's local WiFi network
+ * and publishes patient data as an MQTT client.
+ *
+ * Features:
+ * - Patient health data collection
+ * - MQTT communication (Publisher)
+ * - Local WiFi network
+ * - Real-time data transmission
+ * - JSON formatted patient data
+ *
+ * ============================================================
+ */
 #include <Wire.h>
 #include "MAX30105.h"
 #include "spo2_algorithm.h"
@@ -25,11 +51,9 @@
 #define bufferSize 100
 #define FINGER_THRESHOLD 50000
 
-// حدود النبض الطبيعي
 #define MIN_NATURAL_HR 60
 #define MAX_NATURAL_HR 100
 
-// عدد القراءات للفلترة والتنعيم
 #define NUM_SAMPLES_TO_AVERAGE 3
 
 // ============================================================
@@ -244,7 +268,6 @@ void setup() {
         while (1) delay(1000);
     }
 
-    // إعدادات محسنة للمستشعر لرفع دقة القراءة
     particleSensor.setup(0x1F, 4, 2, 400, 411, 4096); 
     particleSensor.setPulseAmplitudeRed(0x1F);
     particleSensor.setPulseAmplitudeIR(0x1F);
@@ -261,7 +284,6 @@ void loop() {
     if (!client.connected()) mqttConnect();
     client.loop();
 
-    // الانتظار لحين وجود قراءة
     while (!particleSensor.available()) {
         particleSensor.check();
         client.loop();
@@ -279,10 +301,7 @@ void loop() {
     displayMessage("Finger detected", "Measuring...");
     delay(500);
 
-    // ========================================================
-    // تجميع وتنعيم القراءات (Averaging) لزيادة الدقة
-    // ========================================================
-    
+ 
     int32_t totalHR = 0;
     int32_t totalSpO2 = 0;
     int validReadingsCount = 0;
@@ -305,7 +324,6 @@ void loop() {
             &spo2, &validspo2, &heartRate, &validHeartRate
         );
 
-        // التحقق من صحة القراءة الفردية وقبولها ضمن المعدل
         if (validHeartRate && validspo2 && heartRate >= MIN_NATURAL_HR && heartRate <= MAX_NATURAL_HR) {
             totalHR += heartRate;
             totalSpO2 += spo2;
@@ -313,11 +331,7 @@ void loop() {
         }
     }
 
-    // ========================================================
-    // تقييم القراءات والشروط
-    // ========================================================
-
-    // إذا لم تكن القراءات صحيحة أو خرجت عن الحدود الطبيعية
+ 
     if (validReadingsCount == 0) {
         Serial.println("[MAX30102] ERROR: Invalid or out-of-range readings!");
         
@@ -326,11 +340,9 @@ void loop() {
         return;
     }
 
-    // حساب المتوسط للقراءات الصحيحة
     int32_t avgHeartRate = totalHR / validReadingsCount;
     int32_t avgSpO2 = totalSpO2 / validReadingsCount;
 
-    // قراءة درجة الحرارة
     float objectTemp = tempSensor.readObjectTempC();
     float ambientTemp = tempSensor.readAmbientTempC();
 
@@ -341,9 +353,7 @@ void loop() {
     collectedData.validHeartRate = 1;
     collectedData.validspo2 = 1;
 
-    // ========================================================
-    // إرسال البيانات عبر MQTT
-    // ========================================================
+   
 
     String payload = "{";
     payload += "\"heartRate\":" + String(collectedData.heartRate) + ",";
@@ -360,9 +370,7 @@ void loop() {
 
     delay(2000);
 
-    // ========================================================
-    // مؤقت الـ 30 ثانية قبل الاختبار التالي
-    // ========================================================
+   
 
     resetTimerTriggered = false;
 
